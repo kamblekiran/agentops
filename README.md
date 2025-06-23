@@ -97,6 +97,10 @@ streamlit run main.py
 
 ![AgentOps Architecture](ArchitectureDiagram.png)
 
+## 📸 Screenshot
+
+![AgentOps](AgentOps-1.png)
+
 ## 📜 License
 
 MIT © [Your Name]

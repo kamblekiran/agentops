@@ -1,0 +1,8 @@
+{
+  "summary": "✅ Code review passed. Score: 8.7",
+  "issues_found": 2,
+  "recommendations": [
+    "Use environment variables for API keys",
+    "Add docstrings to utility functions"
+  ]
+}

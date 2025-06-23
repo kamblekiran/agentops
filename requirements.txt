@@ -1,0 +1,16 @@
+streamlit==1.35.0
+firebase-admin
+google-cloud-firestore
+openai
+requests
+python-dotenv
+google-auth 
+google-auth-oauthlib 
+google-generativeai
+python-dotenv
+pyrebase4
+google-cloud-run
+google-api-core
+PyGithub>=1.59
+pytest
+coverage

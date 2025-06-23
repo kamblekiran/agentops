@@ -1,0 +1,5 @@
+{
+  "summary": "✅ Deployed to Cloud Run",
+  "service_url": "https://sample-app-xyz.a.run.app",
+  "version": "v1.2"
+}

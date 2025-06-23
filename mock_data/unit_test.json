@@ -1,0 +1,7 @@
+{
+  "summary": "✅ Existing tests found. Coverage: 78%",
+  "recommendations": [
+    "Add edge-case tests for auth handler",
+    "Increase branch coverage in api/utils.py"
+  ]
+}

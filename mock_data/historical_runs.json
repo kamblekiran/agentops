@@ -1,0 +1,72 @@
+[
+  {
+    "timestamp": "2025-06-22T10:00:00Z",
+    "status": "success",
+    "status_score": 1.0,
+    "mode": "production",
+    "agent_code_review": 1.0,
+    "agent_unit_test": 1.0,
+    "agent_regression": 1.0,
+    "agent_build": 1.0,
+    "agent_deploy": 1.0,
+    "agent_monitor": 1.0,
+    "agent_rollback": 0.0,
+    "agent_sre": 1.0
+  },
+  {
+    "timestamp": "2025-06-22T09:00:00Z",
+    "status": "fail",
+    "status_score": 0.4,
+    "mode": "simulation",
+    "agent_code_review": 1.0,
+    "agent_unit_test": 0.8,
+    "agent_regression": 0.0,
+    "agent_build": 0.0,
+    "agent_deploy": 0.0,
+    "agent_monitor": 0.5,
+    "agent_rollback": 1.0,
+    "agent_sre": 0.6
+  },
+  {
+    "timestamp": "2025-06-21T18:00:00Z",
+    "status": "success",
+    "status_score": 0.9,
+    "mode": "production",
+    "agent_code_review": 1.0,
+    "agent_unit_test": 1.0,
+    "agent_regression": 0.9,
+    "agent_build": 1.0,
+    "agent_deploy": 1.0,
+    "agent_monitor": 0.8,
+    "agent_rollback": 0.0,
+    "agent_sre": 0.95
+  },
+  {
+    "timestamp": "2025-06-20T14:30:00Z",
+    "status": "fail",
+    "status_score": 0.3,
+    "mode": "simulation",
+    "agent_code_review": 0.5,
+    "agent_unit_test": 0.0,
+    "agent_regression": 0.4,
+    "agent_build": 0.0,
+    "agent_deploy": 0.0,
+    "agent_monitor": 0.0,
+    "agent_rollback": 1.0,
+    "agent_sre": 0.4
+  },
+  {
+    "timestamp": "2025-06-19T12:00:00Z",
+    "status": "success",
+    "status_score": 1.0,
+    "mode": "production",
+    "agent_code_review": 1.0,
+    "agent_unit_test": 1.0,
+    "agent_regression": 1.0,
+    "agent_build": 1.0,
+    "agent_deploy": 1.0,
+    "agent_monitor": 1.0,
+    "agent_rollback": 0.0,
+    "agent_sre": 1.0
+  }
+]

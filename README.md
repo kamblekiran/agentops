@@ -104,3 +104,6 @@ streamlit run main.py
 ## 📜 License
 
 MIT © [Your Name]
+
+AgentOps is just the beginning of a new idea — one where DevOps pipelines think for themselves.
+

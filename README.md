@@ -38,6 +38,19 @@ AgentOps automates 8+ critical DevOps steps:
 - `Firebase Auth + Firestore`
 - `Docker`, `GitHub API`, `subprocess`, `radon`
 
+## 🔧 Built with Agent Development Kit (ADK)
+
+AgentOps was built using Google’s **Agent Development Kit (ADK)** — a powerful framework for creating structured, LLM-driven agents that can reason, plan, and act autonomously.
+
+I used ADK to:
+- Design each AI agent using a modular `run()` interface
+- Structure agent behavior into **thinking → acting → reasoning** phases
+- Pass shared context between agents throughout the pipeline
+- Standardize agent outputs with status, logs, and error handling
+- Integrate cleanly with Firestore for logging and traceability
+
+ADK helped me build intelligent agents that collaborate across DevOps tasks — turning abstract prompts into practical, production-ready actions.
+
 ## 🔐 Auth & Deployment
 
 - Secure login via Firebase Auth

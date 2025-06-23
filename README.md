@@ -82,7 +82,7 @@ streamlit run main.py
 
 ## 🧭 System Architecture
 
-![AgentOps Architecture] (ArchitectureDiagram.png)
+![AgentOps Architecture](ArchitectureDiagram.png)
 
 ## 📜 License
 

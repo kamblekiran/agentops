@@ -1,4 +1,3 @@
-
 import pytest
 from unittest import mock
 from agents.build_failure_analyzer_agent import BuildFailureAnalyzerAgent
@@ -13,7 +12,7 @@ def test_simulation_mode(mock_sim):
 
 @mock.patch("agents.build_failure_analyzer_agent.is_simulation_mode", return_value=False)
 @mock.patch("agents.build_failure_analyzer_agent.log_session")
-@mock.patch("agents.build_failure_analyzer_agent.gemini_prompt", return_value="Build failed due to missing Dockerfile")
+@mock.patch("agents.build_failure_analyzer_agent.azure_openai_prompt", return_value="Build failed due to missing Dockerfile")
 def test_production_mode(mock_prompt, mock_logger, mock_sim):
     agent = BuildFailureAnalyzerAgent()
     result = agent.run("build log content")

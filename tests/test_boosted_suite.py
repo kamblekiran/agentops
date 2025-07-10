@@ -26,17 +26,19 @@ def test_regression_checker_no_tests(mock_logger, mock_sim):
 
 @mock.patch("agents.builder_agent.is_simulation_mode", return_value=True)
 @mock.patch("agents.builder_agent.log_session")
-def test_builder_docker_failure(mock_logger, mock_sim):
+def test_builder_azure_failure(mock_logger, mock_sim):
     agent = BuildAgent()
-    result = agent.run("https://github.com/example/repo", "dummy-project")
+    azure_config = {"resource_group": "test-rg", "container_registry": "testregistry"}
+    result = agent.run("https://github.com/example/repo", azure_config)
     assert "status" in result
 
 @mock.patch("agents.rollback_agent.is_simulation_mode", return_value=False)
 @mock.patch("agents.rollback_agent.log_session")
-def test_rollback_gcp_failure(mock_logger, mock_sim):
+def test_rollback_azure_failure(mock_logger, mock_sim):
     agent = RollbackAgent()
+    azure_config = {"resource_group": "test-rg"}
     try:
-        result = agent.run("dummy-project")
+        result = agent.run(azure_config)
         assert result["status"] in ["error", "success"]
     except Exception as e:
         assert "failed" in str(e).lower()
@@ -45,14 +47,16 @@ def test_rollback_gcp_failure(mock_logger, mock_sim):
 @mock.patch("agents.deployer_agent.log_session")
 def test_deployer_no_logs(mock_logger, mock_sim):
     agent = DeployAgent()
-    result = agent.run("https://github.com/example/repo", "dummy-project")
+    azure_config = {"resource_group": "test-rg"}
+    result = agent.run("testregistry.azurecr.io/app:latest", azure_config)
     assert "deployed_url" in result
 
 @mock.patch("agents.monitor_agent.is_simulation_mode", return_value=True)
 @mock.patch("agents.monitor_agent.log_session")
 def test_monitor_simulation_success(mock_logger, mock_sim):
     agent = MonitorAgent()
-    result = agent.run("dummy-project")
+    azure_config = {"resource_group": "test-rg"}
+    result = agent.run(azure_config)
     assert isinstance(result, dict)
 
 @mock.patch("agents.test_writer_agent.is_simulation_mode", return_value=True)

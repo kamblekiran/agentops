@@ -4,6 +4,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Set PATH to ensure all standard binaries are accessible
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+
 # Install system dependencies including git + Azure CLI
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \

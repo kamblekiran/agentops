@@ -6,8 +6,8 @@ import uuid
 import shutil
 from github import Github
 from config import is_simulation_mode
-from utils.gemini import gemini_prompt
-from utils.firebase_logger import log_session
+from utils.azure_openai import azure_openai_prompt
+from utils.azure_cosmos import log_session
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -52,8 +52,7 @@ class TestWriterAgent:
 
         # Build LLM prompt
         prompt = [{
-            "role": "user",
-            "text": f"""
+            "content": f"""
 You are a senior QA engineer. Write Python `unittest` test cases for the following GitHub repo:
 
 Repository: {repo_url}
@@ -69,7 +68,7 @@ Files:
 
         try:
             print("[PROD MODE] Generating real test code...")
-            test_code = gemini_prompt(prompt)
+            test_code = azure_openai_prompt(prompt)
 
             # Sanity check: is it valid Python?
             try:

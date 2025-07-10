@@ -1,18 +1,17 @@
-# Dockerfile
+# Dockerfile for Azure AgentOps
 
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies including git + gcloud
+# Install system dependencies including git + Azure CLI
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     git \
     curl \
     gnupg \
-    && curl -sSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - \
-    && echo "deb https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list \
-    && apt-get update && apt-get install -y google-cloud-sdk \
+    lsb-release \
+    && curl -sL https://aka.ms/InstallAzureCLIDeb | bash \
     && rm -rf /var/lib/apt/lists/*
 
 # Preinstall any Python CLI dependencies

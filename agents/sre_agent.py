@@ -1,11 +1,11 @@
 import datetime
 import uuid
 from config import is_simulation_mode
-from utils.gemini import gemini_prompt
-from utils.firebase_logger import fetch_agent_history, log_session
+from utils.azure_openai import azure_openai_prompt
+from utils.azure_cosmos import fetch_agent_history, log_session
 
 class SREAgent:
-    def run(self, repo_url: str, gcp_project: str) -> dict:
+    def run(self, repo_url: str, azure_config: dict) -> dict:
         session_id = str(uuid.uuid4())
         execution_mode = "simulation" if is_simulation_mode() else "production"
         timestamp = datetime.datetime.utcnow().isoformat()
@@ -25,7 +25,7 @@ class SREAgent:
                 "output": "Simulated stability analysis complete.",
                 "input": {
                     "repo_url": repo_url,
-                    "gcp_project": gcp_project,
+                    "azure_config": str(azure_config),
                     "mode": execution_mode
                 }
             }
@@ -51,16 +51,16 @@ class SREAgent:
             Memory: stable around 60%
             Request latency: 99th percentile hit 1200ms
             5xx error rate: 2% during rollout of rev-002
+            Container restart count: 3 in last hour
             """
 
             prompt = [{
-                "role": "user",
-                "parts": [f"""
+                "content": f"""
                 You are a production SRE assistant. Use the logs below to identify trends and generate a risk report.
 
                 🧠 Context:
                 - GitHub Repo: {repo_url}
-                - GCP Project: {gcp_project}
+                - Azure Config: {azure_config}
 
                 📉 Deployments:
                 {deploy_summary}
@@ -88,10 +88,10 @@ class SREAgent:
                 Risk Score: <int 0–100>
                 Critical: <true/false>
                 ---
-                """]
+                """
             }]
 
-            response = gemini_prompt(prompt)
+            response = azure_openai_prompt(prompt)
 
             def safe_extract(key, fallback="N/A"):
                 try:
@@ -117,7 +117,7 @@ class SREAgent:
                 "output": response,
                 "input": {
                     "repo_url": repo_url,
-                    "gcp_project": gcp_project,
+                    "azure_config": str(azure_config),
                     "mode": execution_mode,
                     "prompt_used": prompt
                 }
@@ -136,7 +136,7 @@ class SREAgent:
                 "output": f"Exception: {str(e)}",
                 "input": {
                     "repo_url": repo_url,
-                    "gcp_project": gcp_project,
+                    "azure_config": str(azure_config),
                     "mode": execution_mode
                 }
             }

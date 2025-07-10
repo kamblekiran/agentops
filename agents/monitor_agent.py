@@ -2,99 +2,129 @@ import datetime
 import json
 import uuid
 import os
+import subprocess
 from typing import Dict, Any
 from config import is_simulation_mode
-from utils.firebase_logger import log_session
-from google.cloud import run_v2
-from google.api_core.exceptions import GoogleAPICallError
+from utils.azure_cosmos import log_session
+from utils.azure import get_container_app_logs
 
 class MonitorAgent:
     def run(
         self,
-        gcp_project: str,
-        service_name: str = None,
-        region: str = "us-central1"
+        azure_config: dict,
+        app_name: str = None,
+        resource_group: str = None
     ) -> Dict[str, Any]:
         """
-        Monitors one or all Cloud Run services in the given project and region.
-        Uses the Google Cloud Run Python client instead of CLI.
+        Monitors one or all Azure Container Apps in the given resource group.
+        Uses Azure CLI for monitoring.
         """
         execution_mode = "simulation" if is_simulation_mode() else "production"
         timestamp = datetime.datetime.utcnow().isoformat()
         results: Dict[str, Any] = {}
+        
+        if resource_group is None:
+            resource_group = azure_config.get("resource_group", "agentops-rg")
 
         # Determine list of services to monitor
-        services = []
+        apps = []
         if is_simulation_mode():
-            services = [service_name] if service_name else ["simulated-service"]
+            apps = [app_name] if app_name else ["simulated-app"]
         else:
-            client = run_v2.ServicesClient()
-            parent = f"projects/{gcp_project}/locations/{region}"
             try:
-                response = client.list_services(parent=parent)
-                for svc_obj in response:
-                    name = os.path.basename(svc_obj.name)
-                    if service_name is None or name == service_name:
-                        services.append(name)
-            except GoogleAPICallError as e:
+                # List container apps in resource group
+                result = subprocess.run([
+                    "az", "containerapp", "list",
+                    "--resource-group", resource_group,
+                    "--query", "[].name",
+                    "--output", "tsv"
+                ], capture_output=True, text=True, check=True)
+                
+                all_apps = result.stdout.strip().split('\n') if result.stdout.strip() else []
+                for app in all_apps:
+                    if app_name is None or app == app_name:
+                        apps.append(app)
+                        
+            except subprocess.CalledProcessError as e:
                 session_id = str(uuid.uuid4())
                 error_result = {
                     "status": "error",
-                    "summary": "Failed to list services",
+                    "summary": "Failed to list container apps",
                     "reason": str(e),
                     "traffic_status": "N/A",
                     "errors": [str(e)],
                     "last_deployed_revision": "unknown",
                     "timestamp": timestamp,
-                    "input": {"gcp_project": gcp_project, "service_name": service_name, "mode": execution_mode}
+                    "input": {"azure_config": str(azure_config), "app_name": app_name, "mode": execution_mode}
                 }
                 log_session(session_id, "monitor", error_result)
                 return {"error": error_result}
 
-        # Describe and collect status for each service
-        client = run_v2.ServicesClient()
-        for svc in services:
+        # Describe and collect status for each app
+        for app in apps:
             session_id = str(uuid.uuid4())
-            full_name = f"projects/{gcp_project}/locations/{region}/services/{svc}"
-            try:
-                service = client.get_service(name=full_name)
-                # Use direct attributes
-                conditions = list(service.conditions)
-                traffic = list(service.traffic)
-                last_ready = service.latest_ready_revision
-
-                # errors = [c.message for c in conditions if c.status != run_v2.Condition.State.STATE_TRUE]
-                errors = [
-                            c.message for c in conditions
-                            if c is not None and hasattr(c, "status") and c.status != run_v2.Condition.State.TRUE
-            ]
-
-                traffic_info = ", ".join(f"{t.percent}% → {t.revision}" for t in traffic)
-                summary = "All conditions passed." if not errors else f"{len(errors)} issue(s) detected."
-
-                result = {
-                    "status": "success" if not errors else "error",
-                    "summary": summary,
-                    "reason": None if not errors else "; ".join(errors),
-                    "traffic_status": traffic_info or "No traffic info",
-                    "errors": errors,
-                    "last_deployed_revision": last_ready,
-                    "timestamp": timestamp,
-                    "input": {"gcp_project": gcp_project, "service_name": svc, "mode": execution_mode}
-                }
-            except GoogleAPICallError as e:
+            
+            if is_simulation_mode():
                 result = {
                     "status": "success",
-                    "summary": "Failed to describe service",
-                    "reason": str(e),
-                    "traffic_status": "N/A",
-                    "errors": [str(e)],
-                    "last_deployed_revision": "unknown",
+                    "summary": "Simulated monitoring - all healthy",
+                    "reason": None,
+                    "traffic_status": "100% → latest",
+                    "errors": [],
+                    "last_deployed_revision": "rev-001",
                     "timestamp": timestamp,
-                    "input": {"gcp_project": gcp_project, "service_name": svc, "mode": execution_mode}
+                    "input": {"azure_config": str(azure_config), "app_name": app, "mode": execution_mode}
                 }
+            else:
+                try:
+                    # Get container app details
+                    app_result = subprocess.run([
+                        "az", "containerapp", "show",
+                        "--name", app,
+                        "--resource-group", resource_group,
+                        "--query", "{provisioningState: properties.provisioningState, fqdn: properties.configuration.ingress.fqdn, replicas: properties.template.scale}",
+                        "--output", "json"
+                    ], capture_output=True, text=True, check=True)
+                    
+                    app_info = json.loads(app_result.stdout)
+                    provisioning_state = app_info.get("provisioningState", "Unknown")
+                    fqdn = app_info.get("fqdn", "N/A")
+                    
+                    errors = []
+                    if provisioning_state != "Succeeded":
+                        errors.append(f"Provisioning state: {provisioning_state}")
+                    
+                    # Get logs for additional health info
+                    logs = get_container_app_logs(app, azure_config)
+                    if "error" in logs.lower() or "exception" in logs.lower():
+                        errors.append("Errors found in recent logs")
+                    
+                    summary = "All conditions passed." if not errors else f"{len(errors)} issue(s) detected."
+                    
+                    result = {
+                        "status": "success" if not errors else "error",
+                        "summary": summary,
+                        "reason": None if not errors else "; ".join(errors),
+                        "traffic_status": f"FQDN: {fqdn}",
+                        "errors": errors,
+                        "last_deployed_revision": "latest",
+                        "timestamp": timestamp,
+                        "input": {"azure_config": str(azure_config), "app_name": app, "mode": execution_mode}
+                    }
+                except subprocess.CalledProcessError as e:
+                    result = {
+                        "status": "error",
+                        "summary": "Failed to describe container app",
+                        "reason": str(e),
+                        "traffic_status": "N/A",
+                        "errors": [str(e)],
+                        "last_deployed_revision": "unknown",
+                        "timestamp": timestamp,
+                        "input": {"azure_config": str(azure_config), "app_name": app, "mode": execution_mode}
+                    }
+                    
             # Log and store result
             log_session(session_id, "monitor", result)
-            results[svc] = result
+            results[app] = result
 
         return results

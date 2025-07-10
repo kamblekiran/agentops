@@ -4,8 +4,6 @@ import json
 import os
 import altair as alt
 
-# st.set_page_config(page_title="📊 Dashboard", layout="wide")
-
 # === Styling ===
 st.markdown("""
 <style>
@@ -28,7 +26,7 @@ h1 {
 .kpi {
     font-size: 2rem;
     font-weight: 700;
-    color: #4A90E2;
+    color: #0078D4;
 }
 .label {
     font-weight: 600;
@@ -38,7 +36,7 @@ h1 {
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📊 AgentOps Dashboard")
+st.title("📊 Azure AgentOps Dashboard")
 
 # === Expandable Latest Run Summary ===
 with st.expander("🕒 Latest Run Summary", expanded=False):

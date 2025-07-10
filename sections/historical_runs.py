@@ -3,10 +3,10 @@ import pandas as pd
 import json
 import os
 from config import is_simulation_mode
-from utils.firebase_logger import fetch_all_sessions
+from utils.azure_cosmos import fetch_all_sessions
 
 # st.set_page_config(page_title="🕓 Historical Runs", layout="wide")
-st.title("🕓 Historical Pipeline Runs")
+st.title("🕓 Historical Azure Pipeline Runs")
 
 # === Load Data ===
 if is_simulation_mode():
@@ -21,21 +21,21 @@ else:
     sessions = fetch_all_sessions()
     print("sessions", sessions)
 
-    # ✅ DEBUGGING — Confirm Firestore Data Structure
+    # ✅ DEBUGGING — Confirm Cosmos DB Data Structure
     try:
         session_count = len(sessions) if hasattr(sessions, "__len__") else "unknown"
-        st.info(f"✅ Firestore fetched {session_count} session(s).")
+        st.info(f"✅ Cosmos DB fetched {session_count} session(s).")
     except Exception as e:
         st.error(f"❌ Could not determine session count: {e}")
 
     try:
         if isinstance(sessions, dict) and sessions:
-            st.markdown("### 🔍 First Firestore Session (Preview):")
+            st.markdown("### 🔍 First Cosmos DB Session (Preview):")
             st.json(dict(list(sessions.items())[:1]))  # show one session
         else:
-            st.warning("⚠️ No session data found in Firestore.")
+            st.warning("⚠️ No session data found in Cosmos DB.")
     except Exception as e:
-        st.error(f"❌ Error displaying Firestore session preview: {e}")
+        st.error(f"❌ Error displaying Cosmos DB session preview: {e}")
 
 # === Flatten Session Logs ===
 rows = []

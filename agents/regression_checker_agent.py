@@ -5,8 +5,8 @@ import tempfile
 import os
 import shutil
 from config import is_simulation_mode
-from utils.gemini import gemini_prompt
-from utils.firebase_logger import log_session
+from utils.azure_openai import azure_openai_prompt
+from utils.azure_cosmos import log_session
 
 class RegressionCheckerAgent:
     def run(self, repo_url: str):
@@ -61,8 +61,7 @@ class RegressionCheckerAgent:
 
             # Step 4: Analyze output using LLM
             prompt = [{
-                "role": "user",
-                "text": (
+                "content": (
                     f"I ran regression tests on the repository `{repo_url}`.\n\n"
                     f"Here is the pytest output:\n\n```\n{test_output}\n```\n\n"
                     "Please analyze the results and summarize any regressions. "
@@ -74,7 +73,7 @@ class RegressionCheckerAgent:
                     "5. **Test Pass Rate** – count of passed vs failed\n"
                 )
             }]
-            llm_response = gemini_prompt(prompt)
+            llm_response = azure_openai_prompt(prompt)
 
             result = {
                 "status": "success",  # ✅ Always success to prevent pipeline stop

@@ -1,8 +1,8 @@
 import datetime
 import uuid
 from config import is_simulation_mode
-from utils.gemini import gemini_prompt
-from utils.firebase_logger import log_session
+from utils.azure_openai import azure_openai_prompt
+from utils.azure_cosmos import log_session
 
 class CodeReviewerAgent:
     def run(self, repo_url: str) -> dict:
@@ -37,10 +37,9 @@ class CodeReviewerAgent:
             try:
                 print("[PROD MODE] Running CodeReviewerAgent with real logic...")
 
-                prompt = [
-                    {
-                        "role": "user",
-                        "parts": [f"""
+                prompt = [{
+                    "role": "user",
+                    "content": f"""
                             You are an expert code reviewer AI assisting a developer in evaluating the code quality, security, maintainability, and documentation of a repository.
 
                             🔍 Review Scope:
@@ -67,11 +66,10 @@ class CodeReviewerAgent:
                             - 📈 Risk Score (0–100) with reasoning
 
                             Respond in plain text.
-                        """]
-                    }
-                ]
+                        """
+                }]
 
-                review = gemini_prompt(prompt)
+                review = azure_openai_prompt(prompt)
 
                 result.update({
                     "status": "success",

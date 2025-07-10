@@ -3,7 +3,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import streamlit as st
 import uuid
-from utils.firebase_logger import fetch_agent_history, log_session
 from agents.code_reviewer_agent import CodeReviewerAgent
 from agents.test_writer_agent import TestWriterAgent
 from agents.regression_checker_agent import RegressionCheckerAgent
@@ -15,12 +14,20 @@ from agents.sre_agent import SREAgent
 from agents.build_failure_analyzer_agent import BuildFailureAnalyzerAgent
 
 st.title("🔹 Run Pipeline")
-st.markdown("## 🚀 Run Full Agent Pipeline")
+st.markdown("## 🚀 Run Full Azure Agent Pipeline")
 
 # === Inputs ===
 repo_url = st.text_input("🔗 GitHub Repo URL", placeholder="https://github.com/user/repo")
-gcp_project = st.text_input("☁️ GCP Project ID", placeholder="your-gcp-project")
+azure_resource_group = st.text_input("☁️ Azure Resource Group", placeholder="agentops-rg")
+azure_subscription = st.text_input("🔑 Azure Subscription ID", placeholder="your-subscription-id")
 st.markdown(f"<b>Execution Mode:</b> <code style='color:limegreen'>{st.session_state.get('mode', 'SIMULATION').upper()}</code>", unsafe_allow_html=True)
+
+# Get Azure config
+azure_config = get_azure_config()
+if azure_resource_group:
+    azure_config["resource_group"] = azure_resource_group
+if azure_subscription:
+    azure_config["subscription_id"] = azure_subscription
 
 # === Load History ===
 history_options = {
@@ -41,7 +48,7 @@ STATUS_ICONS = {
 }
 
 # === Pipeline Execution ===
-if st.button("▶️ Run Full Agent Pipeline") and repo_url and gcp_project:
+if st.button("▶️ Run Full Azure Agent Pipeline") and repo_url and azure_resource_group:
     session_id = str(uuid.uuid4())
     with st.spinner("⏱️ Running all agents..."):
 
@@ -57,7 +64,7 @@ if st.button("▶️ Run Full Agent Pipeline") and repo_url and gcp_project:
         log_session(session_id, "regression_check", output)
         agent_outputs["regression_check"] = output
 
-        output = BuildAgent().run(repo_url, gcp_project)
+        output = BuildAgent().run(repo_url, azure_config)
         log_session(session_id, "build", output)
         agent_outputs["build"] = output
 
@@ -77,7 +84,7 @@ if st.button("▶️ Run Full Agent Pipeline") and repo_url and gcp_project:
         ]):
             image_url = agent_outputs["build"].get("image_url")
             if image_url:
-                deploy_output = DeployAgent().run(image_url, gcp_project)
+                deploy_output = DeployAgent().run(image_url, azure_config)
             else:
                 deploy_output = {
                     "status": "error",
@@ -88,9 +95,9 @@ if st.button("▶️ Run Full Agent Pipeline") and repo_url and gcp_project:
             log_session(session_id, "deploy", deploy_output)
             agent_outputs["deploy"] = deploy_output
 
-            monitor_output = MonitorAgent().run(gcp_project)
-            rollback_output = RollbackAgent().run(gcp_project)
-            sre_output = SREAgent().run(repo_url, gcp_project)
+            monitor_output = MonitorAgent().run(azure_config)
+            rollback_output = RollbackAgent().run(azure_config)
+            sre_output = SREAgent().run(repo_url, azure_config)
 
             log_session(session_id, "monitor", monitor_output)
             log_session(session_id, "rollback", rollback_output)

@@ -3,7 +3,7 @@ st.set_page_config(page_title="AgentOps", layout="wide")
 
 import importlib.util
 import os
-from utils.firebase_auth import login_user, verify_id_token, refresh_id_token
+from utils.azure_auth import login_user, verify_id_token, refresh_id_token
 
 # --- Inject Sidebar Styling ---
 st.markdown("""
@@ -72,7 +72,7 @@ if not st.session_state["authenticated"]:
 
 # --- Show login UI if not authenticated ---
 if not st.session_state["authenticated"]:
-    st.title("🔐 Sign In to AgentOps")
+    st.title("🔐 Sign In to Azure AgentOps")
     st.markdown("Please enter your credentials to continue.")
     username = st.text_input("Username or Email")
     password = st.text_input("Password", type="password")
@@ -140,5 +140,5 @@ def render_page(file_path):
 if page in PAGE_MODULES:
     render_page(PAGE_MODULES[page])
 else:
-    st.title("🤖 AgentOps — AI DevOps Assistant")
+    st.title("🤖 Azure AgentOps — AI DevOps Assistant")
     st.markdown("Use the sidebar to begin.")

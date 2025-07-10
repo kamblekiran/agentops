@@ -1,16 +1,17 @@
 import datetime
 import uuid
+import subprocess
+import json
 from config import is_simulation_mode
-from utils.firebase_logger import log_session
-from google.cloud import run_v2
-from google.api_core.exceptions import GoogleAPIError
+from utils.azure_cosmos import log_session
 
 
 class RollbackAgent:
-    def run(self, gcp_project: str, service_name: str = "agentops-app", region: str = "us-central1") -> dict:
+    def run(self, azure_config: dict, app_name: str = "agentops-app") -> dict:
         session_id = str(uuid.uuid4())
         execution_mode = "simulation" if is_simulation_mode() else "production"
         timestamp = datetime.datetime.utcnow().isoformat()
+        resource_group = azure_config.get("resource_group", "agentops-rg")
 
         if is_simulation_mode():
             result = {
@@ -25,24 +26,27 @@ class RollbackAgent:
             }
             result["input"] = {
                 "repo_url": "N/A",
-                "gcp_project": gcp_project,
-                "service_name": service_name,
+                "azure_config": str(azure_config),
+                "app_name": app_name,
                 "mode": execution_mode
             }
             log_session(session_id, "rollback", result)
             return result
 
         try:
-            print("[PROD MODE] Attempting GCP rollback using Cloud Run API...")
+            print("[PROD MODE] Attempting Azure rollback using Container Apps...")
 
-            client = run_v2.ServicesClient()
-            parent = f"projects/{gcp_project}/locations/{region}/services/{service_name}"
+            # Get container app revisions
+            revisions_result = subprocess.run([
+                "az", "containerapp", "revision", "list",
+                "--name", app_name,
+                "--resource-group", resource_group,
+                "--query", "[].{name: name, createdTime: properties.createdTime, active: properties.active}",
+                "--output", "json"
+            ], capture_output=True, text=True, check=True)
             
-            # List revisions (desc order)
-            revisions_client = run_v2.RevisionsClient()
-            revisions = list(revisions_client.list_revisions(parent=f"projects/{gcp_project}/locations/{region}"))
-            revisions = [r for r in revisions if r.metadata.name.startswith(service_name)]
-            revisions.sort(key=lambda r: r.metadata.create_time, reverse=True)
+            revisions = json.loads(revisions_result.stdout)
+            revisions.sort(key=lambda r: r["createdTime"], reverse=True)
 
             if len(revisions) < 2:
                 result = {
@@ -55,19 +59,15 @@ class RollbackAgent:
                     "output": "Rollback skipped due to lack of previous revision."
                 }
             else:
-                prev_revision = revisions[1].metadata.name
-                service = client.get_service(name=parent)
-
-                service.traffic = [
-                    run_v2.TrafficTarget(
-                        type_=run_v2.TrafficTargetAllocationType.REVISION,
-                        revision=prev_revision,
-                        percent=100
-                    )
-                ]
-
-                update_operation = client.update_service(service=service)
-                update_operation.result()  # Wait for it
+                prev_revision = revisions[1]["name"]
+                
+                # Update traffic to route 100% to previous revision
+                subprocess.run([
+                    "az", "containerapp", "ingress", "traffic", "set",
+                    "--name", app_name,
+                    "--resource-group", resource_group,
+                    "--revision-weight", f"{prev_revision}=100"
+                ], check=True)
 
                 result = {
                     "status": "success",
@@ -80,22 +80,22 @@ class RollbackAgent:
                     "output": f"Rolled back to revision: {prev_revision}"
                 }
 
-        except GoogleAPIError as e:
+        except subprocess.CalledProcessError as e:
             result = {
                 "status": "error",
                 "restored": False,
-                "reason": f"API error: {e.message if hasattr(e, 'message') else str(e)}",
+                "reason": f"Azure CLI error: {str(e)}",
                 "critical": False,
                 "skippable": True,
                 "timestamp": timestamp,
-                "output": "Rollback failed due to API error."
+                "output": "Rollback failed due to Azure CLI error."
             }
 
         # ✅ Input payload for logging
         result["input"] = {
             "repo_url": "N/A",
-            "gcp_project": gcp_project,
-            "service_name": service_name,
+            "azure_config": str(azure_config),
+            "app_name": app_name,
             "mode": execution_mode
         }
 

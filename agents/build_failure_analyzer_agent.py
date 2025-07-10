@@ -1,8 +1,8 @@
 import datetime
 import uuid
 from config import is_simulation_mode
-from utils.gemini import gemini_prompt
-from utils.firebase_logger import log_session
+from utils.azure_openai import azure_openai_prompt
+from utils.azure_cosmos import log_session
 
 class BuildFailureAnalyzerAgent:
     def run(self, build_logs: str, repo_url: str = "") -> dict:
@@ -35,7 +35,8 @@ class BuildFailureAnalyzerAgent:
             }
         else:
             try:
-                prompt = f"""
+                prompt = [{
+                    "content": f"""
                     You are a Build Failure Analyzer AI agent.
 
                     Given the following build logs, analyze the root cause of the failure and suggest a precise resolution.
@@ -51,9 +52,10 @@ class BuildFailureAnalyzerAgent:
                     Build Logs:
                     {build_logs}
                     (Repo: {repo_url})
-                """
+                    """
+                }]
 
-                raw_response = gemini_prompt([{"text": prompt}])
+                raw_response = azure_openai_prompt(prompt)
                 parsed = self._parse_response(raw_response)
 
                 result = default_result | {
